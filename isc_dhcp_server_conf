@@ -1,0 +1,35 @@
+HOW TO CONFIGURE isc-dhcp-serve
+*******************************
+
+isc-dhcp-server conf for Ubuntu (release 22.04) servers
+=======================================================
+File: /etc/dhcp/dhcpd.conf
+
+First, add comments (#) to these files below:
+---------------------------------------------
+#option domain-name "example.org";
+#option domain-name-servers ns1.example.org, ns2.example.org;
+
+#default-lease-time 600;
+#max-lease-time 7200;
+
+Second, look for and modify this block below for internal network setting:
+--------------------------------------------------------------------------
+# A slightly different configuration for an internal subnet.
+subnet 172.16.20.0 netmask 255.255.255.0 {
+  range 172.16.20.100 172.16.20.150;
+  option domain-name-servers 172.16.20.254;
+  option domain-name "homelab.pro";
+  option subnet-mask 255.255.255.0;
+  option routers 172.16.20.1;
+  option broadcast-address 172.16.20.255;
+  default-lease-time 600;
+  max-lease-time 7200;
+}
+
+
+Third, save and exit the file. Test and restart the service with these commands:
+--------------------------------------------------------------------------------
+sudo dhcpd -t (test for error in the file /etc/dhcp/dhcpd.conf)
+sudo systemctl restart dhcpd OR
+sudo systemctl restart isc-dhcp-server
