@@ -1,0 +1,49 @@
+Setting up git-account to create a repository from CLI
+******************************************************
+
+#Assuming you already open a github account
+Frist, generate a new ssh key to add your github account
+#To generate, use below command:
+ssh-keygen -t ed25519 -C "your_email@whatever.com" (This is the email you used to open your github account)
+
+#Add the new generated to the ssh-agent
+ssh-add ~/.ssh/id_ed25519
+
+#Copy and add the ssh key to your github account
+nano ~/.ssh/id_ed25519.pub
+
+- From your github account dashboard:
+- Click on your profile icon/name
+- From the drop down list, select Settings
+- On the new window, under Access, click on SSH and GPG Keys
+- Click on New SSH Key
+- Paste your copied ssh key into the Key box and give it a 'Title'
+- Next click on Add SSH Key!
+
+#Test SSH connection to github from your Linux CLI using this command
+ssh -T git@github.com
+- If you get the below response back, your ssh connection is ok, otherwise...
+- Hi Yourname! You've successfully authenticated, but GitHub does not provide shell access.
+
+#Back to github
+#From your github account, click the "+" icon in the top right corner of the page
+#then select  "New repository" from the dropdown menu and fill out Repository info.
+#Do not initialise README or add any .gitignore or license files on as these will
+#be created locally from your terminal.
+#Now, the fun part, go to your terminal and start running these commands
+
+echo "echo "# yourfile" >> README.md (This create READ.md file needed)
+git init
+git add README.md
+git commit -m "Initial commit"(You can change message in double quote, if you want)
+
+#NOTE: After running the last command (git commit -m...) above, you might a message, if you, run the these commands
+git config --global user.email "your_email@whatever.com" (email used to open github)
+git config --global user.email "your_github_profile_name"
+
+#Now, continue...
+git branch -M main
+git remote add origin git@github.com:profile_name/repository_name.git
+git push -u origin main
+
+#That's it, you just created your first github repository!
