@@ -1,0 +1,29 @@
+---
+- name: Install and configure Apache2 on Ubuntu
+  hosts: admaster
+  become: yes
+
+  tasks:
+    - name: Update APT package cache
+      apt:
+        update_cache: yes
+
+    - name: Install Apache2 package
+      apt:
+        name: apache2
+        state: present
+
+    - name: Allow HTTP connections (Port 80) in UFW
+      shell: ufw allow 80/tcp
+      become: yes
+
+    - name: Enable Apache2 service
+      service:
+        name: apache2
+        enabled: yes
+        state: started
+
+    - name: Create an HTML test file
+      copy:
+        content: "<html><body><h1>Hello, Ansible!</h1></body></html>"
+        dest: /var/www/html/test.html
