@@ -1,0 +1,28 @@
+#To add new files or modified one after your first push, use the following commands:
+#NOTE: make sure you're on the directory you created for github before running the commands as you might mistakenly expose ALL system files to the world to see!
+git add .
+git commit -m "Message (like, new files added)"
+git push
+
+
+#To pull a file from your repository to your local terminal, use this command:
+git pull origin main:lab_conf/apache_install.yml
+#in the above example, 'lab_conf' is the repository name and 'apache_install.yml' is the file name
+
+
+#To pull the repository itself to your local terminal, use this command:
+#NOTE: pulling the repository means you're pull all it contents (files) as well
+git pull origin main
+
+
+#To delete your repository from your local terminal, first, you need a github personal access token with the 'delete_repo' scope
+#To create your token follow these steps:
+Go to your GitHub Settings.
+Click on "Developer settings" on the left sidebar.
+Click on "Personal access tokens."
+Click the "Generate token" button.
+Select the "delete_repo" scope.
+#Make sure to copy your generated token as you'll need it in the following steps.
+#From your local terminal, type this command:
+curl -X "DELETE" -H "Authorization: token YOUR_TOKEN" "https://api.github.com/repos/Dkrown/lab_conf"
+#replace YOUR_TOKEN, Dkrown and lab_conf with your generated token, your github profile name and repository name.
