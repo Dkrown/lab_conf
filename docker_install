@@ -63,3 +63,24 @@ Step 2:
 # Images, containers, volumes, or custom configuration files on your host aren't automatically removed. To delete all images, containers, and volumes
 sudo rm -rf /var/lib/docker
 sudo rm -rf /var/lib/containerd
+
+
+
+# Working with docker..
+  cd Docker/
+  cd getting-started-app/
+  docker run -dp 127.0.0.1:3000:3000 getting-started
+  docker ps
+  ls -R src
+  nano src/static/js/app.js
+  nano -l src/static/js/app.js
+  docker build -t getting-started .
+  docker run -dp 127.0.0.1:3000:3000 getting-started
+  docker ps
+  docker stop 8f7c75457b18
+  docker rm 8f7c75457b18
+  docker run -dp 127.0.0.1:3000:3000 getting-started
+  docker push dkrown/getting-started:tagname
+  docker login -u dkrown
+  docker tag getting-started dkrown/getting-started
+  docker push dkrown/getting-started
