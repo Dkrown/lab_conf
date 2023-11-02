@@ -37,6 +37,20 @@ Codename:	jammy
 -----------------------------------
 
 
+# To run Docker without sudo preface, create a Unix group called 'docker',
+# (if not already created)
+sudo groupadd docker
+
+# If already created, add the user to the group, using this command:
+sudo usermod -aG docker username
+
+# Run this command to activate the changes to the group:
+newgrp docker
+
+# Verify run docker without sudo:
+docker run hello-world
+# When the container runs, it prints a message and exits!
+
 
 To uninstall Docker
 ===================
