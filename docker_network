@@ -1,0 +1,87 @@
+Docker:
+Standalone container networking using 'default bridge network'
+==============================================================
+This test is to connect 2 containers to the 'bridge network'
+------------------------------------------------------------
+
+1.  Check current networks before do anything:
+	run: docker network ls => Enter
+	This show list all available networks
+
+2.  Start 2 alpine containers running ash:
+	run: docker run -dit --name alpine1 alpine ash => Enter
+	run: docker run -dit --name alpine2 alpine ash => Enter
+	NOTE: The -dit flag is start the containers in the background
+
+3.  Confirm that the containers werre running:
+	run: docker container ls => Enter
+	The containers details should dispalyed
+
+4.  Inspect the 'bridge network' to see that the containers were connected to it:
+	run: docker network bridge => Enter
+	This display all the containers details connected to the bridge network
+
+5.  To connect to the coontainer, for example alpine1:
+	run: docker attach alpine1 => Enter
+	You should see the prompt change to '/ #'.
+	From / #, run: ip addr show (for alpine1 network interface)
+	Try ping google.com
+	Try ping alpine2's IP address
+	NOTE: You can't 'ping alpine2' as the default bridge can't resolve DNS.
+
+6.  Stop the container (alpine1):
+	press Ctrl+p+q
+
+7.  Stop and remove the containers:
+	run: docker container stop alpine1 alpine2
+	run: docker container rm alpine1 alpine2
+----------------------------------------------------
+NOTE: THIS ISN'T RECOMMEND IN PRODUCTION ENVIRONMENT
+----------------------------------------------------
+
+Docker:
+Standalone container networking using 'user-defined networks'
+==================================================================
+This test is to connect 2 containers to the 'user-defined network'
+------------------------------------------------------------------
+
+1.  Create a new network, i.e, lab-net:
+	run: docker network create lab-net => Enter
+	OR run: docker network create --driver bridge lab-net => Enter
+
+	Check for the network created:
+	run: docker network ls => Enter
+
+	Inspect the network created:
+	run: docker network inspect lab-net => Enter
+
+2.  Create 4 containers:
+	run: docker run -dit --name alpine1 --network lab-net alpine ash => Enter
+	run: docker run -dit --name alpine2 --network lab-net alpine ash => Enter
+	run: docker run -dit --name alpine3 alpine ash => Enter
+	run: docker run -dit --name alpine4 --network lab-net alpine ash => Enter
+
+	Now, let try to connect 'alpine4' to the default bridge network
+	run: docker network connect bridge alpine4
+
+3.  Verify that the containers are running:
+	run: docker network ls => Enter
+
+4. Inspect the networks (bridge and lab-net):
+	run: docker network inspect bridge => Enter
+	run: docker network inspect lab-net => Enter
+
+5.  Test containers connectivity by pinging IP addresses and their names:
+	run: docker container attach alpine1 => Enter
+	run: ping 172.18.0.3 -c 4 => Enter
+	run: ping alpine2 -c 4 => Enter
+
+	NOTE: Only all containers in lab-net (user-defined network) can ping each other by 	IP address or name. While other containers in the 'default bridge network' can only 	ping each other by their IP addresses!
+
+6.  Stop the container (alpine1):
+	press Ctrl+p+q
+
+7.  Stop and remove the containers and network (lab-net):
+	run: docker container stop alpine1 alpine2 alpine3 alpine4
+	run: docker container rm alpine1 alpine2 alpine3 alpine4
+	run: docker network rm lab-net
