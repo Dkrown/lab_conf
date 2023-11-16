@@ -39,6 +39,7 @@ This test is to connect 2 containers to the 'bridge network'
 NOTE: THIS ISN'T RECOMMEND IN PRODUCTION ENVIRONMENT
 ----------------------------------------------------
 
+
 Docker:
 Standalone container networking using 'user-defined networks'
 ==================================================================
@@ -85,3 +86,23 @@ This test is to connect 2 containers to the 'user-defined network'
 	run: docker container stop alpine1 alpine2 alpine3 alpine4
 	run: docker container rm alpine1 alpine2 alpine3 alpine4
 	run: docker network rm lab-net
+
+
+Docker:
+Standalone container networking using 'host network'
+==========================================================
+This test is to connect 2 containers to the 'host network'
+----------------------------------------------------------
+
+1.  Create and start a container as a detached process:
+        run: docker run --rm -d --network host --name labNginx nginx => Enter
+
+2.  Access Nginx by browsing: http://localhost:80
+	NOTE: If you have Apache2 active, you need to stop the service before accessing 'http://localhost:80' as it might cause a conflict.
+
+3.  Verify the networks and port 80:
+	run: ip adr show
+	run: sudo ss -plunt | grep 80
+
+4.  Stop the container:
+	run: docker container stop labNginx
