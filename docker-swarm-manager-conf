@@ -1,0 +1,40 @@
+Set up docker swarm manager with two or more workers
+====================================================
+Step 1:
+-------
+Make sure you have docker engine installed on all machines to use as manager and workers.
+
+Step 2:
+-------
+Configure a static IP address on your network interface (mine is 'enp0s8') for the swarm manager to use to advertise it IP to the workers.
+- sudo nano /etc/netplan/*.yaml:
+network:
+    version: 2
+    renderer: NetworkManager
+    ethernets:
+        enp0s8:
+            addresses: [192.168.110.175/24]
+            routes:
+               - to: default
+                 via: 192.168.110.1
+	    nameservers:
+	       addresses: [8.8.8.8, 8.8.4.4]
+
+When the static IP has been configured, run below command to initiate swarm manager:
+	docker swarm init --advertise-addr 192.168.110.175
+
+After running the above command successfully, a token should be generated in this format:	docker swarm join --token SWMTKN...
+	NOTE: Copy this token generated as you'll need it to run on the workers!
+
+Now, verify that the swarm manager is active and the IP (192.168.110.175) is assigned with this command: 
+	docker info
+
+Step 3:
+-------
+Ensure that the workers (PCs or VMs) are on the same network (192.168.110.0) as the swarm manager.  Now run the token generated from the swarm manager on each PCs or VMs (mostly through ssh):
+	docker swarm join --token SWMTKN...
+
+
+Step 4:
+On the swarm manager terminal, run the below command to see the workers nodes:
+	docker node ls
