@@ -1,5 +1,5 @@
-Set up docker swarm manager with two or more workers
-====================================================
+Docker Swarm Manager set-up
+===========================
 Step 1:
 -------
 Make sure you have docker engine installed on all machines to use as manager and workers.
@@ -7,7 +7,7 @@ Make sure you have docker engine installed on all machines to use as manager and
 Step 2:
 -------
 Configure a static IP address on your network interface (mine is 'enp0s8') for the swarm manager to use to advertise it IP to the workers.
-- sudo nano /etc/netplan/*.yaml:
+- sudo nano /etc/netplan/*.yaml (Ubuntu-22.04):
 network:
     version: 2
     renderer: NetworkManager
@@ -17,8 +17,6 @@ network:
             routes:
                - to: default
                  via: 192.168.110.1
-	    nameservers:
-	       addresses: [8.8.8.8, 8.8.4.4]
 
 When the static IP has been configured, run below command to initiate swarm manager:
 	docker swarm init --advertise-addr 192.168.110.175
@@ -29,12 +27,72 @@ After running the above command successfully, a token should be generated in thi
 Now, verify that the swarm manager is active and the IP (192.168.110.175) is assigned with this command: 
 	docker info
 
+Also, verify the information about the nodes using this command:
+	docker node ls
+
+Done!
+------------------------------------------------------------------------------
+
+
+Add nodes (workers) to the swarm (manager)
+==========================================
 Step 3:
 -------
-Ensure that the workers (PCs or VMs) are on the same network (192.168.110.0) as the swarm manager.  Now run the token generated from the swarm manager on each PCs or VMs (mostly through ssh):
+Ensure that the workers (PCs or VMs) are on the same network (192.168.110.0) as the swarm manager.  Now run the token generated from the swarm manager on each workers (PCs) (mostly through ssh):
 	docker swarm join --token SWMTKN...
+	NOTE: If you didn't copiy the command earlier, run this command on swarm manager:  
+	docker swarm join-token worker
 
-
-Step 4:
 On the swarm manager terminal, run the below command to see the workers nodes:
 	docker node ls
+
+Done!
+---------------------------------------------------------------------------------
+
+
+Deploy a service to the swarm
+=============================
+Step 4:
+From the swarm manager terminal, run this command:
+	docker service create --replicas 1 --name helloworld alpine ping docker.com
+	AND after this command:
+	docker service scale helloworld
+	(This scaled up from copy 'replicas 1' to 5 copies and distributed between the workers and the manager)
+
+Now verify the replica services running with these commands:
+	docker service ls
+	docker service ps helloworld
+
+If all the steps were follow correctly, you should see the services running on both manager and the workers.
+
+Done!
+-----------------------------------------------------------------------------------
+
+
+Inspect a service on the swarm
+==============================
+Step 5:
+Run this command from the manager's terminal:
+	docker service inspect --pretty helloworld
+	OR
+	docker service inspect helloworld
+	(This will display the output in JSON format)
+
+Check the nodes are running with this command:
+	docker service ps helloword
+
+SSH into the workers to verify the service running as well with this command:
+	docker ps
+
+Done!
+-------------------------------------------------------------------------------
+
+
+Delete the service running on the swarm
+=======================================
+Fianlly, to remove/delete the service (helloworld) running, use this command:
+	docker service rm helloworld
+
+Verify that the service has been removed with this command:
+	docker service inspect helloworld
+	Running, should return an error status!
