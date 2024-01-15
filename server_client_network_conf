@@ -1,0 +1,102 @@
+Network configurations of a server (Ubuntu) and two desktops (Ubuntu and Debian)
+================================================================================
+Server-side
+Configure Network Interfaces on server:
+---------------------------------------
+sudo nano /etc/netplan/01-netcfg.yaml
+network:
+  version: 2
+  renderer: networkd [NetworkManager]
+  ethernets:
+    enp0s3:
+      dhcp4: yes
+    enp0s8:
+      addresses: [192.168.1.1/24]
+
+sudo netplan apply
+
+---------------------
+Enable IP forwarding:
+---------------------
+sudo nano /etc/sysctl.conf
+Uncomment - net.ipv4.ip_forward=1
+
+sudo sysctl -p
+
+---------------------------
+Configure iptables for NAT:
+---------------------------
+sudo iptables -t nat -A POSTROUTING -o enp0s3 -j MASQUERADE
+sudo iptables -A FORWARD -i enp0s8 -o enp0s3 -m state --state RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -A FORWARD -i enp0s3 -o enp0s8 -j ACCEPT
+
+------------------------
+Configure DNS on server:
+------------------------
+sudo nano /etc/systemd/resolved.conf
+Under [Resolve], uncomment - Google: 8.8.8.8#...
+
+sudo systemctl restart systemd-resolved
+sudo systemctl status systemd-resolved
+
+-------------------------------------------------
+Check and confirm that all server configurations:
+-------------------------------------------------
+Ensure that IP forwarding is enabled. Run the following command:
+	cat /proc/sys/net/ipv4/ip_forward
+
+If the output is 0, IP forwarding is disabled. Enable it by running:
+	echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
+
+Or check /etc/sysctl.conf and make sure 'net.ipv4.ip_forward=1' is uncomment
+
+Then, apply the changes: sudo sysctl -p
+---------------------------------------
+
+Confirm that the masquerade rule for Network Address Translation (NAT) is correctly set. Run:
+	sudo iptables -t nat -L
+
+Ensure there is a rule similar to:
+	Chain POSTROUTING (policy ACCEPT)
+	target     prot opt source               destination         
+	MASQUERADE  all  --  anywhere             anywhere            
+----------------------------------------------------------
+
+Confirm that the default gateway on the server is set correctly. Run:
+	ip route | grep default
+
+The output should show the default gateway pointing to the external network interface (e.g. enp0s3).
+-------------------------------------------------------------------------------------------
+
+Confirm that the DNS server is configured on the server. Check the /etc/resolv.conf file:
+	cat /etc/resolv.conf
+----------------------------
+
+
+Client-side (Debian):
+--------------------
+sudo nano /etc/network/interfaces
+
+auto enp0s8
+iface enp0s8 inet static
+  address 192.168.1.2
+  netmask 255.255.255.0
+  gateway 192.168.1.1 #This is server IP which the client uses as gateway
+
+sudo systemctl restart networking
+---------------------------------
+
+DNS Configuration:
+------------------
+Edit the /etc/resolv.conf file to use a DNS server configured earlier.
+
+nano /etc/resolv.conf
+Add the following line:
+nameserver 192.168.1.1
+----------------------
+
+Test Connectivity:
+-----------------
+Ensure the clients can ping the server and access the internet:
+ping 192.168.1.1        # Should be reachable
+ping google.com         # Should have internet access
