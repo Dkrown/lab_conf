@@ -1,0 +1,238 @@
+Redhat/CentOS: BIND9 Configuration
+==================================
+doc: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/deploying_different_types_of_servers/assembly_setting-up-and-configuring-a-bind-dns-server_deploying-different-types-of-servers
+
+Master server:
+==============
+// named.conf
+// Adding acl for local subnets
+acl internal-subnets {
+        127.0.0.1;
+        10.10.10.0/24;
+};
+
+options {
+        listen-on port 53 { 127.0.0.1; 10.10.10.200; };
+        listen-on-v6 port 53 { ::1; };
+        directory       "/var/named";
+	...
+	...
+        allow-query     { internal-subnets; };
+        allow-recursion { internal-subnets; };
+        version "currently, not available";
+
+        forwarders { 192.168.100.2; };
+        forward only;
+
+        recursion yes;
+
+        dnssec-validation yes;
+
+        managed-keys-directory "/var/named/dynamic";
+        geoip-directory "/usr/share/GeoIP";
+
+        pid-file "/run/named/named.pid";
+        session-keyfile "/run/named/session.key";
+
+        /* https://fedoraproject.org/wiki/Changes/CryptoPolicy */
+        include "/etc/crypto-policies/back-ends/bind.config";
+};
+
+logging {
+        channel default_debug {
+                file "data/named.run";
+                severity dynamic;
+        };
+
+        category notify { zone_transfer_log; };
+        category xfer-in { zone_transfer_log; };
+        category xfer-out { zone_transfer_log; };
+        channel zone_transfer_log {
+                file "/var/named/log/transfer.log" versions 10 size 50m;
+                print-time yes;
+                print-category yes;
+                print-severity yes;
+                severity info;
+        };
+};
+
+zone "." IN {
+        type hint;
+        file "named.ca";
+};
+
+zone "hometech.lan" {
+        type master;
+        file "hometech.forward";
+        allow-query { internal-subnets; };
+        allow-transfer { key hometech-transfer-key; };
+        also-notify { 10.10.10.201; };
+        dnssec-policy default;
+};
+
+zone "10.10.10.in-addr.arpa" {
+        type master;
+        file "hometech.reverse";
+        allow-query { internal-subnets; };
+        allow-transfer { none; };
+
+};
+
+key "hometech-transfer-key" {
+        algorithm hmac-sha256;
+        secret "EeieZ+yC6DOkHNCee2qTgWl/OHMMBbiq0Ukdg=";
+};
+
+//The above tsig-key was generated with this syntax:
+// tsig-keygen hometech-transfer-key | tee -a /etc/named.conf
+
+include "/etc/named.rfc1912.zones";
+include "/etc/named.root.key";
+
+------------------------------
+
+Forward - Zone file: /var/named/hometech.forward
+------
+TTL 8h
+@ IN SOA ns1.hometech.lan. hostmaster.hometech.lan. (
+                          2024030101 ; serial number
+                          1d         ; refresh period
+                          3h         ; retry period
+                          3d         ; expire time
+                          3h )       ; minimum TTL
+
+                  IN NS   ns1.hometech.lan.
+                  IN MX   10 mail.hometech.lan.
+
+ns1               IN A    10.10.10.200
+ns2               IN A    10.10.10.201
+mail              IN A    10.10.10.211
+www               IN A    10.10.10.240
+
+
+Reverse - Zone file: /var/named/hometech.reverse
+-------
+$TTL 8h
+@ IN SOA ns1.hometech.lan. hostmaster.hometech.lan. (
+                          2024030101 ; serial number
+                          1d         ; refresh period
+                          3h         ; retry period
+                          3d         ; expire time
+                          3h )       ; minimum TTL
+
+                  IN NS   ns1.hometech.lan.
+
+200               IN PTR  ns1.hometech.lan.
+201               IN PTR  ns2.hometech.lan.
+211               IN PTR  mail.hometech.lan.
+240               IN PTR  www.hometech.lan.
+===========================================
+
+Verifications:
+--------------
+named-checkconf
+named-checkconf -z
+named-checkzone hometech.lan /var/named/hometech.forward
+named-checkzone 10.10.10.200 /var/named/hometech.reverse
+
+Firewall rule:
+--------------
+firewall-cmd --permanent --add-service=dns
+firewall-cmd --reload
+
+Restart/reload named:
+---------------------
+systemctl reload named
+systemctl status named
+
+Dig utility verifications:
+--------------------------
+dig @workstation1 www.hometech.lan
+dig @workstation1 ns1.hometech.lan
+NOTE: @workstation1 is the computer hostname instead of 'localhost'
+
+dig +short @workstation1 -x 10.10.10.200
+dig +short @workstation1 -x 10.10.10.211
+dig +short @workstation1 -x 10.10.10.240
+dig +short @workstation1 -x 10.10.10.201
+
+dnssec-dsfromkey /var/named/Khometech.lan.+013+40979.key
+grep DNSKEY /var/named/Khometech.lan.+013+40979.key
+dig +dnssec +short @workstation1 A www.hometech.lan
+dig @workstation1 hometech.lan +dnssec
+======================================
+
+
+Slave server:
+=============
+// named.conf
+// Adding acl for local subnets
+acl internal-subnets {
+        127.0.0.1;
+        10.10.10.0/24;
+};
+
+key "hometech-transfer-key" {
+        algorithm hmac-sha256;
+        secret "EeieZ+yC6DOkHNCee2qTgWl/OHMMBbiq0Ukdg=";
+};
+
+options {
+	listen-on port 53 { 127.0.0.1; 10.10.10.201; };
+        listen-on-v6 port 53 { ::1; };
+        directory       "/var/named";
+	...
+	...
+        allow-query     { internal-subnets; };
+        allow-recursion { internal-subnets; };
+        version "currently, not available";
+	recursion yes;
+
+        dnssec-enable yes;
+        dnssec-validation yes;
+
+        managed-keys-directory "/var/named/dynamic";
+
+        pid-file "/run/named/named.pid";
+        session-keyfile "/run/named/session.key";
+
+        /* https://fedoraproject.org/wiki/Changes/CryptoPolicy */
+        include "/etc/crypto-policies/back-ends/bind.config";
+};
+
+logging {
+	channel default_debug {
+                file "data/named.run";
+                severity dynamic;
+        };
+};
+
+zone "." IN {
+	type hint;
+        file "named.ca";
+};
+
+zone "hometech.lan" {
+        type slave;
+        file "slaves/hometech.forward";
+        allow-query { any; };
+        allow-transfer { none; };
+        masters { 10.10.10.200 key hometech-transfer-key; };
+};
+
+zone "10.10.10.in-addr.arpa" {
+        type slave;
+        file "slaves/hometech.reverse";
+        masters { 10.10.10.200 key hometech-transfer-key; };
+
+};
+=============================================================
+
+named-checkconf
+systemctl reload named
+journalctl -u named
+ls -l /var/named/slaves
+
+dig +short @10.10.10.201 A www.hometech.lan
+dig +short @workstation2 A www.hometech.lan 
+NOTE: same as above, instead of IP replaced with computer name [hostname].
